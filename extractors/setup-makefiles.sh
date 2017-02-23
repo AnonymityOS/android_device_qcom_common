@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Copyright (C) 2016 The CyanogenMod Project
+# Copyright (C) 2017 The LineageOS Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,10 +18,14 @@
 
 set -e
 
+export INITIAL_COPYRIGHT_YEAR=2016
+
 # Required!
 DEVICE=binaries
 DEVICE_COMMON="common/extractors"
 VENDOR=qcom
+
+INITIAL_COPYRIGHT_YEAR=2016
 
 # Load extractutils and do some sanity checks
 MY_DIR="${BASH_SOURCE%/*}"
@@ -68,6 +73,51 @@ echo "ifeq (\$(QCPATH),)" >> "$PRODUCTMK"
 write_makefiles "$MY_DIR"/"$SUBSYSTEM-$PLATFORM"-64.txt
 
 printf "endif" >> "$PRODUCTMK"
+
+# We are done!
+write_footers
+
+PLATFORM=msm8952
+SUBSYSTEM=graphics
+
+# Initialize the helper
+setup_vendor "$DEVICE/${PLATFORM}-32/$SUBSYSTEM" "$VENDOR" "$CM_ROOT" true true $SUBSYSTEM
+
+# Copyright headers and guards
+write_headers $PLATFORM TARGET_BOARD_PLATFORM
+
+# Qualcomm BSP blobs - we put a conditional around here
+# in case the BSP is actually being built
+echo "ifeq (\$(QCPATH),)" >> "$PRODUCTMK"
+
+write_makefiles "$MY_DIR"/"$SUBSYSTEM-$PLATFORM"-32.txt
+
+printf "endif" >> "$PRODUCTMK"
+
+cat << EOF >> "$ANDROIDMK"
+\$(shell mkdir -p \$(PRODUCT_OUT)/system/vendor/lib/egl && pushd \$(PRODUCT_OUT)/system/vendor/lib > /dev/null && ln -s egl/libEGL_adreno.so libEGL_adreno.so && popd > /dev/null)
+EOF
+
+# We are done!
+write_footers
+
+# Initialize the helper
+setup_vendor "$DEVICE/${PLATFORM}-64/$SUBSYSTEM" "$VENDOR" "$CM_ROOT" true true $SUBSYSTEM
+
+# Copyright headers and guards
+write_headers $PLATFORM TARGET_BOARD_PLATFORM
+
+# Qualcomm BSP blobs - we put a conditional around here
+# in case the BSP is actually being built
+echo "ifeq (\$(QCPATH),)" >> "$PRODUCTMK"
+
+write_makefiles "$MY_DIR"/"$SUBSYSTEM-$PLATFORM"-64.txt
+
+printf "endif" >> "$PRODUCTMK"
+
+cat << EOF >> "$ANDROIDMK"
+\$(shell mkdir -p \$(PRODUCT_OUT)/system/vendor/lib64/egl && pushd \$(PRODUCT_OUT)/system/vendor/lib64 > /dev/null && ln -s egl/libEGL_adreno.so libEGL_adreno.so && popd > /dev/null)
+EOF
 
 # We are done!
 write_footers
